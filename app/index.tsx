@@ -1,48 +1,42 @@
-
-import { useState } from "react"
+import React from "react";
+import { auth } from './firebase';
+import { useState } from "react";
+import { useRouter } from 'expo-router';
+import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup} from "firebase/auth";
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const router = useRouter();
 
-  const handleLogin = () => {
-    // Implementar lógica de login aqui
-    console.log("Login com:", email, password)
-  }
+  const handleLogin = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/games');
+    } catch (error: any) {
+      alert(`Erro ao fazer login: ${error.message}`);
+    }
+  };
 
-  const handleGoogleLogin = () => {
-    console.log("Login com Google")
-  }
-
-  const handleAppleLogin = () => {
-    console.log("Login com Apple")
-  }
-
-  const handleGameCenterLogin = () => {
-    console.log("Login com Game Center")
-  }
+  const handleGoogleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      router.push('/games');
+    } catch (error: any) {
+      alert(`Erro ao fazer login com Google: ${error.message}`);
+    }
+  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#000000] p-5 text-white">
-      {/* Botão voltar */}
-      <button className="w-10 h-10 rounded-full bg-[#222222] flex items-center justify-center mb-10">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M19 12H5M5 12L12 19M5 12L12 5"
-            stroke="white"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </svg>
-      </button>
 
       <div className="flex flex-col mt-4">
         {/* Cabeçalho */}
         <h1 className="text-3xl font-bold mb-1">Olá,</h1>
-        <h1 className="text-3xl font-bold mb-4">Bem vindo(a) novamente </h1>
+        <h1 className="text-3xl font-bold mb-4">Bem-vindo(a)</h1>
 
-        <p className="text-[#999999] text-sm mb-8">Faça login agora para melhor experiencia no seus games !</p>
+        <p className="text-[#999999] text-sm mb-8">Faça login agora para a melhor experiência nos seus jogos!</p>
 
         {/* Formulário */}
         <div className="space-y-4 mb-4">
@@ -96,14 +90,14 @@ export default function LoginScreen() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password"
+              placeholder="Senha"
               className="w-full bg-[#111111] rounded-full py-3 pl-10 pr-4 text-white border border-[#333333] focus:outline-none focus:border-[#00E676]"
             />
           </div>
         </div>
 
         <div className="flex justify-end mb-5">
-          <button className="text-[#00E676] text-sm font-medium">Esqueceu a senha ?</button>
+          <button className="text-[#00E676] text-sm font-medium">Esqueceu a senha?</button>
         </div>
 
         {/* Botão de Login */}
@@ -112,7 +106,7 @@ export default function LoginScreen() {
             onClick={handleLogin}
             className="w-full bg-[#00E676] text-black font-bold py-3 px-8 rounded-full hover:bg-[#00C462] transition-colors"
           >
-            Login
+            Entrar
           </button>
         </div>
 
@@ -149,45 +143,15 @@ export default function LoginScreen() {
               />
             </svg>
             <span className="ml-2 text-white">Google</span>
-          </button>
-
-          {/* Botão Apple */}
-          <button
-            onClick={handleAppleLogin}
-            className="flex-1 flex items-center justify-center bg-[#111111] border border-[#333333] rounded-full py-3 hover:bg-[#1A1A1A] transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M17.05 20.28C16.07 21.23 15 21.08 13.97 20.63C12.88 20.17 11.88 20.15 10.73 20.63C9.28998 21.25 8.52998 21.07 7.66998 20.28C2.78998 15.25 3.50998 7.59 9.04998 7.31C10.4 7.38 11.34 8.05 12.13 8.11C13.31 7.87 14.44 7.18 15.7 7.27C17.21 7.39 18.35 7.99 19.1 9.07C15.98 10.94 16.72 15.05 19.58 16.2C19.01 17.7 18.27 19.19 17.04 20.29L17.05 20.28ZM12.03 7.25C11.88 5.02 13.69 3.18 15.77 3C16.06 5.58 13.43 7.5 12.03 7.25Z"
-                fill="white"
-              />
-            </svg>
-            <span className="ml-2 text-white">Apple</span>
-          </button>
-        </div>
-
-        {/* Botão Game Center */}
-        <div className="mb-8">
-          <button
-            onClick={handleGameCenterLogin}
-            className="w-full flex items-center justify-center bg-[#111111] border border-[#333333] rounded-full py-3 hover:bg-[#1A1A1A] transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="7" cy="12" r="4" fill="#5AC8FA" />
-              <circle cx="17" cy="7" r="4" fill="#FF2D55" />
-              <circle cx="17" cy="17" r="4" fill="#4CD964" />
-              <circle cx="12" cy="12" r="2" fill="#FFCC00" />
-            </svg>
-            <span className="ml-2 text-white">Game Center</span>
-          </button>
+          </button>   
         </div>
 
         {/* Link para cadastro */}
         <div className="flex justify-center items-center">
-          <span className="text-[#999999] text-sm">Não tem conta ? </span>
-          <button className="text-[#00E676] text-sm font-medium ml-1">Criar conta</button>
+          <span className="text-[#999999] text-sm">Não tem conta? </span>
+          <button onClick={() => router.push('/register')} className="text-[#00E676] text-sm font-medium ml-1">Criar conta</button>
         </div>
       </div>
     </div>
-  )
+  );
 }
