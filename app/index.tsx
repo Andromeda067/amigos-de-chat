@@ -1,8 +1,9 @@
 import React from "react";
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { useState } from "react";
 import { useRouter } from 'expo-router';
 import { signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup} from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -21,11 +22,20 @@ export default function LoginScreen() {
   const handleGoogleLogin = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+      const user = userCredential.user;
+
+      await setDoc(doc(db, "users", user.uid), {
+          name: user.displayName || "Usuário Google",
+          username: user.email ? user.email.split('@')[0] : "default_username", 
+          email: user.email,
+          createdAt: new Date().toISOString(),
+      });
+
       router.push('/games');
-    } catch (error: any) {
-      alert(`Erro ao fazer login com Google: ${error.message}`);
-    }
+  } catch (error: any) {
+    alert(`Erro ao fazer cadastro com Google: ${error.message}`);
+  }
   };
 
   return (

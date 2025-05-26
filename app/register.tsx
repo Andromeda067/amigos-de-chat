@@ -2,7 +2,7 @@ import React from "react";
 import { auth, db } from './firebase';
 import { useState } from "react";
 import { useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, OAuthProvider, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 
 export default function SignupScreen() {
@@ -58,7 +58,7 @@ export default function SignupScreen() {
 
         await setDoc(doc(db, "users", user.uid), {
             name: user.displayName || "Usuário Google",
-            username: user.email ? user.email.split('@')[0] : "default_username", // Use part of the email as the default username
+            username: user.email ? user.email.split('@')[0] : "default_username", 
             email: user.email,
             createdAt: new Date().toISOString(),
         });
@@ -69,31 +69,6 @@ export default function SignupScreen() {
     }
   };
 
-  const handleAppleSignup = async () => {
-    try {
-      const provider = new OAuthProvider('apple.com');
-      provider.addScope('email');
-      provider.addScope('name');
-      const userCredential = await signInWithPopup(auth, provider);
-      const user = userCredential.user;
-
- 
-      await setDoc(doc(db, "users", user.uid), {
-        name: user.displayName || "Usuário Apple",
-        username: user.email ? user.email.split('@')[0] : `apple_user_${user.uid.slice(0, 8)}`, // Nome de usuário padrão
-        email: user.email || "N/A",
-        createdAt: new Date().toISOString(),
-      });
-
-      router.push('/games');
-    } catch (error: any) {
-      alert(`Erro ao fazer cadastro com Apple: ${error.message}`);
-    }
-  };
-
-  const handleGameCenterSignup = () => {
-    alert("Cadastro com Game Center não está disponível em navegadores web. Use um aplicativo iOS para acessar esta funcionalidade.");
-  };
 
   return (
     <div className="flex flex-col min-h-screen bg-[#000000] p-5 text-white">

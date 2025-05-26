@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { db, auth } from '../firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { auth, db, rtdb } from '../firebase';
+import { ref, push, onChildAdded, query, orderByChild, get, child } from 'firebase/database';
+import { doc, getDoc } from "firebase/firestore";
 
 export default function ChatRoomScreen() {
   const { roomId } = useLocalSearchParams();
@@ -11,11 +12,18 @@ export default function ChatRoomScreen() {
 
   useEffect(() => {
     if (!roomId) return;
-    const q = query(collection(db, `rooms/${roomId}/messages`), orderBy('createdAt', 'asc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+    const messagesRef = ref(rtdb, `rooms/${roomId}/messages`);
+    const messagesQuery = query(messagesRef, orderByChild('createdAt'));
+
+    const unsubscribe = onChildAdded(messagesQuery, (snapshot) => {
+      const messageData = snapshot.val();
+      setMessages((prev) => [...prev, { id: snapshot.key, ...messageData }]);
     });
-    return () => unsubscribe();
+
+    return () => {
+      // Listener no Realtime Database é removido automaticamente
+    };
   }, [roomId]);
 
   const sendMessage = async () => {
@@ -24,10 +32,20 @@ export default function ChatRoomScreen() {
       return;
     }
     try {
-      await addDoc(collection(db, `rooms/${roomId}/messages`), {
+      const userId = auth.currentUser?.uid;
+      if (!userId) throw new Error('Usuário não autenticado');
+
+      // Buscar o nick do usuário no banco
+      const userDocRef = doc(db, "users", userId);
+      const userDocSnap = await getDoc(userDocRef);
+      const nick = userDocSnap.exists() ? userDocSnap.data().username : auth.currentUser?.email;
+
+
+      const messagesRef = ref(rtdb, `rooms/${roomId}/messages`);
+      await push(messagesRef, {
         text: message,
-        user: auth.currentUser?.email || 'Anônimo',
-        createdAt: serverTimestamp()
+        user: nick,
+        createdAt: Date.now()
       });
       setMessage('');
     } catch (error: any) {
@@ -40,7 +58,7 @@ export default function ChatRoomScreen() {
       {/* Botão voltar */}
       <button
         className="w-10 h-10 rounded-full bg-[#222222] flex items-center justify-center mb-10"
-        onClick={() => router.back()}
+        onClick={() => router.push('/games')}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path
