@@ -1,14 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Alert } from "react-native";
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { auth, db, rtdb } from '../firebase';
-import { ref, push, onChildAdded, query, orderByChild, get, child } from 'firebase/database';
+import { ref, push, onChildAdded, query, orderByChild, off } from 'firebase/database';
 import { doc, getDoc } from "firebase/firestore";
+import Svg, { Path } from "react-native-svg";
+
+type Message = {
+  id: string;
+  text: string;
+  user: string;
+  createdAt: number;
+};
 
 export default function ChatRoomScreen() {
   const { roomId } = useLocalSearchParams();
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const router = useRouter();
+  const flatListRef = useRef<FlatList<Message>>(null); // Ref for scrolling to the latest message
 
   useEffect(() => {
     if (!roomId) return;
@@ -16,129 +26,221 @@ export default function ChatRoomScreen() {
     const messagesRef = ref(rtdb, `rooms/${roomId}/messages`);
     const messagesQuery = query(messagesRef, orderByChild('createdAt'));
 
-    const unsubscribe = onChildAdded(messagesQuery, (snapshot) => {
+    const handleNewMessage = (snapshot: { val: () => any; key: any; }) => {
       const messageData = snapshot.val();
       setMessages((prev) => [...prev, { id: snapshot.key, ...messageData }]);
-    });
+    };
+
+    onChildAdded(messagesQuery, handleNewMessage);
 
     return () => {
-      // Listener no Realtime Database é removido automaticamente
+      off(messagesRef, 'child_added', handleNewMessage); // Proper cleanup of listener
     };
   }, [roomId]);
 
+  // Scroll to the latest message whenever messages update
+  useEffect(() => {
+    if (messages.length > 0 && flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
+  }, [messages]);
+
   const sendMessage = async () => {
     if (!message) {
-      alert('Por favor, insira uma mensagem.');
+      Alert.alert("Erro", 'Por favor, insira uma mensagem.');
       return;
     }
     try {
       const userId = auth.currentUser?.uid;
       if (!userId) throw new Error('Usuário não autenticado');
 
-      // Buscar o nick do usuário no banco
       const userDocRef = doc(db, "users", userId);
       const userDocSnap = await getDoc(userDocRef);
       const nick = userDocSnap.exists() ? userDocSnap.data().username : auth.currentUser?.email;
-
 
       const messagesRef = ref(rtdb, `rooms/${roomId}/messages`);
       await push(messagesRef, {
         text: message,
         user: nick,
-        createdAt: Date.now()
+        createdAt: Date.now(),
       });
       setMessage('');
     } catch (error: any) {
-      alert(`Erro ao enviar mensagem: ${error.message}`);
+      Alert.alert("Erro", `Erro ao enviar mensagem: ${error.message}`);
     }
   };
 
+  const renderMessage = ({ item }: { item: Message }) => (
+    <View style={styles.messageContainer}>
+      <Text style={styles.messageUser}>{item.user}:</Text>
+      <Text style={styles.messageText}>{item.text}</Text>
+    </View>
+  );
+
   return (
-    <div className="flex flex-col min-h-screen bg-[#000000] p-5 text-white">
+    <View style={styles.container}>
       {/* Botão voltar */}
-      <button
-        className="w-10 h-10 rounded-full bg-[#222222] flex items-center justify-center mb-10"
-        onClick={() => router.push('/games')}
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
+      <TouchableOpacity onPress={() => router.push('/games')} style={styles.backButton}>
+        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <Path
             d="M19 12H5M5 12L12 19M5 12L12 5"
             stroke="white"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-        </svg>
-      </button>
+        </Svg>
+      </TouchableOpacity>
 
-      <div className="flex flex-col flex-1">
+      <View style={styles.content}>
         {/* Cabeçalho */}
-        <h1 className="text-3xl font-bold mb-1">Chat</h1>
-        <p className="text-[#999999] text-sm mb-8">
-          Converse com outros jogadores na sala!
-        </p>
+        <Text style={styles.title}>Chat</Text>
+        <Text style={styles.subtitle}>Converse com outros jogadores na sala!</Text>
 
         {/* Lista de mensagens */}
-        <div className="flex-1 space-y-4 mb-6 overflow-y-auto">
-          {messages.length > 0 ? (
-            messages.map(message => (
-              <div
-                key={message.id}
-                className="bg-[#111111] border border-[#333333] rounded-lg p-3"
-              >
-                <span className="font-bold text-[#00E676]">{message.user}:</span>{' '}
-                <span className="text-white">{message.text}</span>
-              </div>
-            ))
-          ) : (
-            <p className="text-[#999999] text-sm">Nenhuma mensagem ainda. Seja o primeiro a conversar!</p>
-          )}
-        </div>
+        <FlatList
+          ref={flatListRef}
+          data={messages}
+          renderItem={renderMessage}
+          keyExtractor={(item) => item.id}
+          ListEmptyComponent={
+            <Text style={styles.emptyText}>
+              Nenhuma mensagem ainda. Seja o primeiro a conversar!
+            </Text>
+          }
+          style={styles.messageList}
+        />
 
         {/* Formulário para enviar mensagem */}
-        <div className="flex items-center space-x-4">
-          <div className="relative flex-1">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-[#777777]"
-              >
-                <path
-                  d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z"
-                  stroke="#777777"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M22 6L12 13L2 6"
-                  stroke="#777777"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <input
-              type="text"
+        <View style={styles.inputContainer}>
+          <View style={styles.textInputWrapper}>
+            <Svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="none"
+              style={styles.inputIcon}
+            >
+              <Path
+                d="M4 4H20C21.1 4 22 4.9 22 6V18C22 19.1 21.1 20 20 20H4C2.9 20 2 19.1 2 18V6C2 4.9 2.9 4 4 4Z"
+                stroke="#777777"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M22 6L12 13L2 6"
+                stroke="#777777"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <TextInput
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChangeText={setMessage}
               placeholder="Digite sua mensagem"
-              className="w-full bg-[#111111] rounded-full py-3 pl-10 pr-4 text-white border border-[#333333] focus:outline-none focus:border-[#00E676]"
+              style={styles.textInput}
+              placeholderTextColor="#999999"
             />
-          </div>
-          <button
-            onClick={sendMessage}
-            className="bg-[#00E676] text-black font-bold py-3 px-6 rounded-full hover:bg-[#00C462] transition-colors"
-          >
-            Enviar
-          </button>
-        </div>
-      </div>
-    </div>
+          </View>
+          <TouchableOpacity onPress={sendMessage} style={styles.sendButton}>
+            <Text style={styles.sendButtonText}>Enviar</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
+    padding: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#222222',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  content: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  subtitle: {
+    color: '#999999',
+    fontSize: 14,
+    marginBottom: 32,
+  },
+  messageList: {
+    flex: 1,
+    marginBottom: 24,
+  },
+  messageContainer: {
+    backgroundColor: '#111111',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  messageUser: {
+    fontWeight: 'bold',
+    color: '#00E676',
+    marginRight: 4,
+  },
+  messageText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+  },
+  emptyText: {
+    color: '#999999',
+    fontSize: 14,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  textInputWrapper: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111111',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  inputIcon: {
+    marginLeft: 8,
+  },
+  textInput: {
+    flex: 1,
+    color: '#FFFFFF',
+    padding: 12,
+    fontSize: 16,
+  },
+  sendButton: {
+    backgroundColor: '#00E676',
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+  },
+  sendButtonText: {
+    color: '#000000',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+});

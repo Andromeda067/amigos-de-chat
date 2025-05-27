@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
 import { auth, db } from './firebase';
-import { useState } from "react";
 import { useRouter } from 'expo-router';
-import { createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, updateProfile } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
+import Svg, { Path, Rect } from "react-native-svg"; // Import SVG components
 
 export default function SignupScreen() {
   const [name, setName] = useState("");
@@ -16,27 +17,24 @@ export default function SignupScreen() {
 
   const handleSignup = async () => {
     if (!name || !username || !email || !password || !confirmPassword) {
-      alert("Por favor, preencha todos os campos.");
+      Alert.alert("Erro", "Por favor, preencha todos os campos.");
       return;
     }
     if (password !== confirmPassword) {
-      alert("As senhas não coincidem.");
+      Alert.alert("Erro", "As senhas não coincidem.");
       return;
     }
     if (!termsAccepted) {
-      alert("Você deve aceitar os Termos de Serviço e a Política de Privacidade.");
+      Alert.alert("Erro", "Você deve aceitar os Termos de Serviço e a Política de Privacidade.");
       return;
     }
 
     try {
-      // Criar usuário com e-mail e senha
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // Atualizar o perfil do usuário com o nome
       await updateProfile(user, { displayName: name });
 
-      // Salvar nome de usuário no Firestore
       await setDoc(doc(db, "users", user.uid), {
         name,
         username,
@@ -46,282 +44,294 @@ export default function SignupScreen() {
 
       router.push('/games');
     } catch (error: any) {
-      alert(`Erro ao criar conta: ${error.message}`);
+      Alert.alert("Erro", `Erro ao criar conta: ${error.message}`);
     }
   };
-
-  const handleGoogleSignup = async () => {
-    try {
-        const provider = new GoogleAuthProvider();
-        const userCredential = await signInWithPopup(auth, provider);
-        const user = userCredential.user;
-
-        await setDoc(doc(db, "users", user.uid), {
-            name: user.displayName || "Usuário Google",
-            username: user.email ? user.email.split('@')[0] : "default_username", 
-            email: user.email,
-            createdAt: new Date().toISOString(),
-        });
-
-        router.push('/games');
-    } catch (error: any) {
-      alert(`Erro ao fazer cadastro com Google: ${error.message}`);
-    }
-  };
-
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#000000] p-5 text-white">
+    <View style={styles.container}>
       {/* Botão voltar */}
-      <button onClick={() => router.push('/')} className="w-10 h-10 rounded-full bg-[#222222] flex items-center justify-center mb-10">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
+      <TouchableOpacity onPress={() => router.push('/')} style={styles.backButton}>
+        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <Path
             d="M19 12H5M5 12L12 19M5 12L12 5"
             stroke="white"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-        </svg>
-      </button>
+        </Svg>
+      </TouchableOpacity>
 
-      <div className="flex flex-col mt-4">
+      <View style={styles.content}>
         {/* Cabeçalho */}
-        <h1 className="text-3xl font-bold mb-1">Olá,</h1>
-        <h1 className="text-3xl font-bold mb-4">Crie sua conta</h1>
+        <Text style={styles.title}>Olá,</Text>
+        <Text style={styles.title}>Crie sua conta</Text>
 
-        <p className="text-[#999999] text-sm mb-8">Cadastre-se agora para uma experiência completa nos seus jogos!</p>
+        <Text style={styles.subtitle}>Cadastre-se agora para uma experiência completa nos seus jogos!</Text>
 
         {/* Formulário */}
-        <div className="space-y-4 mb-4">
+        <View style={styles.form}>
           {/* Campo Nome */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-[#777777]"
-              >
-                <path
-                  d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
-                  stroke="#777777"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21"
-                  stroke="#777777"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <input
-              type="text"
+          <View style={styles.inputContainer}>
+            <Svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={styles.icon}>
+              <Path
+                d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
+                stroke="#777777"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M20 21C20 16.5817 16.4183 13 12 13C7.58172 13 4 16.5817 4 21"
+                stroke="#777777"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <TextInput
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChangeText={setName}
               placeholder="Nome completo"
-              className="w-full bg-[#111111] rounded-full py-3 pl-10 pr-4 text-white border border-[#333333] focus:outline-none focus:border-[#00E676]"
+              style={styles.input}
+              placeholderTextColor="#999999"
             />
-          </div>
+          </View>
 
           {/* Campo Nome de Usuário */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-[#777777]"
-              >
-                <path
-                  d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
-                  stroke="#777777"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
-                  stroke="#777777"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-            <input
-              type="text"
+          <View style={styles.inputContainer}>
+            <Svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={styles.icon}>
+              <Path
+                d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21"
+                stroke="#777777"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <Path
+                d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z"
+                stroke="#777777"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </Svg>
+            <TextInput
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              onChangeText={setUsername}
               placeholder="Nome de usuário"
-              className="w-full bg-[#111111] rounded-full py-3 pl-10 pr-4 text-white border border-[#333333] focus:outline-none focus:border-[#00E676]"
+              style={styles.input}
+              placeholderTextColor="#999999"
             />
-          </div>
+          </View>
 
           {/* Campo Email */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-[#777777]"
-              >
-                <rect x="4" y="6" width="16" height="12" rx="2" stroke="#777777" strokeWidth="2" />
-                <path
-                  d="M4 9L11.1056 12.5528C11.6686 12.8343 12.3314 12.8343 12.8944 12.5528L20 9"
-                  stroke="#777777"
-                  strokeWidth="2"
-                />
-              </svg>
-            </div>
-            <input
-              type="email"
+          <View style={styles.inputContainer}>
+            <Svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={styles.icon}>
+              <Rect x="4" y="6" width="16" height="12" rx="2" stroke="#777777" strokeWidth="2" />
+              <Path
+                d="M4 9L11.1056 12.5528C11.6686 12.8343 12.3314 12.8343 12.8944 12.5528L20 9"
+                stroke="#777777"
+                strokeWidth="2"
+              />
+            </Svg>
+            <TextInput
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChangeText={setEmail}
               placeholder="email@example.com"
-              className="w-full bg-[#111111] rounded-full py-3 pl-10 pr-4 text-white border border-[#333333] focus:outline-none focus:border-[#00E676]"
+              style={styles.input}
+              placeholderTextColor="#999999"
+              keyboardType="email-address"
+              autoCapitalize="none"
             />
-          </div>
+          </View>
 
           {/* Campo Senha */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-[#777777]"
-              >
-                <rect x="5" y="11" width="14" height="10" rx="2" stroke="#777777" strokeWidth="2" />
-                <path
-                  d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11"
-                  stroke="#777777"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <input
-              type="password"
+          <View style={styles.inputContainer}>
+            <Svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={styles.icon}>
+              <Rect x="5" y="11" width="14" height="10" rx="2" stroke="#777777" strokeWidth="2" />
+              <Path
+                d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11"
+                stroke="#777777"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </Svg>
+            <TextInput
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChangeText={setPassword}
               placeholder="Senha"
-              className="w-full bg-[#111111] rounded-full py-3 pl-10 pr-4 text-white border border-[#333333] focus:outline-none focus:border-[#00E676]"
+              style={styles.input}
+              placeholderTextColor="#999999"
+              secureTextEntry
             />
-          </div>
+          </View>
 
           {/* Campo Confirmar Senha */}
-          <div className="relative">
-            <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-[#777777]"
-              >
-                <rect x="5" y="11" width="14" height="10" rx="2" stroke="#777777" strokeWidth="2" />
-                <path
-                  d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11"
-                  stroke="#777777"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </div>
-            <input
-              type="password"
+          <View style={styles.inputContainer}>
+            <Svg width="18" height="18" viewBox="0 0 24 24" fill="none" style={styles.icon}>
+              <Rect x="5" y="11" width="14" height="10" rx="2" stroke="#777777" strokeWidth="2" />
+              <Path
+                d="M8 11V7C8 4.79086 9.79086 3 12 3C14.2091 3 16 4.79086 16 7V11"
+                stroke="#777777"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </Svg>
+            <TextInput
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChangeText={setConfirmPassword}
               placeholder="Confirmar senha"
-              className="w-full bg-[#111111] rounded-full py-3 pl-10 pr-4 text-white border border-[#333333] focus:outline-none focus:border-[#00E676]"
+              style={styles.input}
+              placeholderTextColor="#999999"
+              secureTextEntry
             />
-          </div>
-        </div>
+          </View>
+        </View>
 
         {/* Termos e condições */}
-        <div className="flex items-start mb-5">
-          <div className="flex items-center h-5">
-            <input
-              id="terms"
-              type="checkbox"
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              className="w-4 h-4 border border-[#333333] rounded bg-[#111111] focus:ring-[#00E676] focus:ring-2"
-            />
-          </div>
-          <label htmlFor="terms" className="ml-2 text-sm text-[#999999]">
-            Eu concordo com os <span className="text-[#00E676]">Termos de Serviço</span> e{" "}
-            <span className="text-[#00E676]">Política de Privacidade</span>
-          </label>
-        </div>
+        <View style={styles.termsContainer}>
+          <TouchableOpacity
+            style={styles.checkbox}
+            onPress={() => setTermsAccepted(!termsAccepted)}
+          >
+            {termsAccepted && (
+              <Svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                <Path
+                  d="M5 13L9 17L19 7"
+                  stroke="#00E676"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </Svg>
+            )}
+          </TouchableOpacity>
+          <Text style={styles.termsText}>
+            Eu concordo com os <Text style={styles.link}>Termos de Serviço</Text> e{" "}
+            <Text style={styles.link}>Política de Privacidade</Text>
+          </Text>
+        </View>
 
         {/* Botão de Cadastro */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={handleSignup}
-            className="w-full bg-[#00E676] text-black font-bold py-3 px-8 rounded-full hover:bg-[#00C462] transition-colors"
-          >
-            Criar Conta
-          </button>
-        </div>
-
-        {/* Separador */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="flex-grow h-px bg-[#333333]"></div>
-          <span className="px-4 text-[#999999] text-sm">ou continue com</span>
-          <div className="flex-grow h-px bg-[#333333]"></div>
-        </div>
-
-        {/* Botões de cadastro social - primeira linha */}
-        <div className="flex space-x-4 mb-4">
-          {/* Botão Google */}
-          <button
-            onClick={handleGoogleSignup}
-            className="flex-1 flex items-center justify-center bg-[#111111] border border-[#333333] rounded-full py-3 hover:bg-[#1A1A1A] transition-colors"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path
-                d="M21.8055 10.0415H21V10H12V14H17.6515C16.827 16.3285 14.6115 18 12 18C8.6865 18 6 15.3135 6 12C6 8.6865 8.6865 6 12 6C13.5295 6 14.921 6.577 15.9805 7.5195L18.809 4.691C17.023 3.0265 14.634 2 12 2C6.4775 2 2 6.4775 2 12C2 17.5225 6.4775 22 12 22C17.5225 22 22 17.5225 22 12C22 11.3295 21.931 10.675 21.8055 10.0415Z"
-                fill="#FFC107"
-              />
-              <path
-                d="M3.15302 7.3455L6.43852 9.755C7.32752 7.554 9.48052 6 12 6C13.5295 6 14.921 6.577 15.9805 7.5195L18.809 4.691C17.023 3.0265 14.634 2 12 2C8.15902 2 4.82802 4.1685 3.15302 7.3455Z"
-                fill="#FF3D00"
-              />
-              <path
-                d="M12 22C14.583 22 16.93 21.0115 18.7045 19.404L15.6095 16.785C14.5718 17.5742 13.3038 18.001 12 18C9.39897 18 7.19047 16.3415 6.35847 14.027L3.09747 16.5395C4.75247 19.778 8.11347 22 12 22Z"
-                fill="#4CAF50"
-              />
-              <path
-                d="M21.8055 10.0415H21V10H12V14H17.6515C17.2571 15.1082 16.5467 16.0766 15.608 16.7855L15.6095 16.7845L18.7045 19.4035C18.4855 19.6025 22 17 22 12C22 11.3295 21.931 10.675 21.8055 10.0415Z"
-                fill="#1976D2"
-              />
-            </svg>
-            <span className="ml-2 text-white">Google</span>
-          </button>
-        </div>
+        <TouchableOpacity onPress={handleSignup} style={styles.signupButton}>
+          <Text style={styles.signupButtonText}>Criar Conta</Text>
+        </TouchableOpacity>
 
         {/* Link para login */}
-        <div className="flex justify-center items-center">
-          <span className="text-[#999999] text-sm">Já tem uma conta? </span>
-          <button onClick={() => router.push('/')} className="text-[#00E676] text-sm font-medium ml-1">Fazer login</button>
-        </div>
-      </div>
-    </div>
+        <View style={styles.loginLink}>
+          <Text style={styles.loginText}>Já tem uma conta? </Text>
+          <TouchableOpacity onPress={() => router.push('/')}>
+            <Text style={styles.loginButton}>Fazer login</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
+    padding: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#222222',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subtitle: {
+    color: '#999999',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  form: {
+    gap: 16,
+    marginBottom: 16,
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#111111',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#333333',
+  },
+  icon: {
+    marginLeft: 8,
+  },
+  input: {
+    flex: 1,
+    color: '#FFFFFF',
+    padding: 12,
+    fontSize: 16,
+  },
+  termsContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 4,
+    backgroundColor: '#111111',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  termsText: {
+    color: '#999999',
+    fontSize: 14,
+  },
+  link: {
+    color: '#00E676',
+  },
+  signupButton: {
+    backgroundColor: '#00E676',
+    borderRadius: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  signupButtonText: {
+    color: '#000000',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  loginLink: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  loginText: {
+    color: '#999999',
+    fontSize: 14,
+  },
+  loginButton: {
+    color: '#00E676',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 4,
+  },
+});
