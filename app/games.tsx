@@ -1,7 +1,9 @@
 import React from "react";
+import { View, Text, TouchableOpacity, Image, StyleSheet, Alert } from "react-native";
 import { auth } from './firebase';
 import { useRouter } from 'expo-router';
 import { signOut } from "firebase/auth";
+import Svg, { Path } from "react-native-svg";
 
 export default function GameListScreen() {
   const router = useRouter();
@@ -11,124 +13,155 @@ export default function GameListScreen() {
       await signOut(auth);
       router.push('/');
     } catch (error: any) {
-      alert(`Erro ao fazer logout: ${error.message}`);
+      Alert.alert("Erro", `Erro ao fazer logout: ${error.message}`);
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#000000] p-5 text-white">
+    <View style={styles.container}>
       {/* Botão voltar */}
-      <button
-        onClick={() => router.push('/')}
-        className="w-10 h-10 rounded-full bg-[#222222] flex items-center justify-center mb-10"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
+      <TouchableOpacity onPress={() => router.push('/')} style={styles.backButton}>
+        <Svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <Path
             d="M19 12H5M5 12L12 19M5 12L12 5"
             stroke="white"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
-        </svg>
-      </button>
+        </Svg>
+      </TouchableOpacity>
 
-      <div className="flex flex-col mt-4">
+      {/* Logo */}
+      <View style={styles.logoContainer}>
+        <Image
+          source={{ uri: "https://pbs.twimg.com/profile_images/1628796712490770434/RmQk6QmF_400x400.jpg" }}
+          style={styles.logo}
+        />
+      </View>
+
+      <View style={styles.content}>
         {/* Cabeçalho */}
-        <h1 className="text-3xl font-bold mb-1">Escolha um Jogo</h1>
-        <p className="text-[#999999] text-sm mb-8">
+        <Text style={styles.title}>Escolha um Jogo</Text>
+        <Text style={styles.subtitle}>
           Selecione um jogo para começar a jogar agora!
-        </p>
+        </Text>
 
         {/* Lista de jogos */}
-        <div className="space-y-4 mb-6">
-          {/* Botão Jogo 1 */}
-          <button
-            onClick={() => router.push('/rooms?game=Jogo1')}
-            className="w-full bg-[#111111] border border-[#333333] rounded-full py-3 px-8 text-white font-medium hover:bg-[#1A1A1A] transition-colors flex items-center justify-center"
+        <View style={styles.gameList}>
+          <TouchableOpacity
+            onPress={() => router.push('/rooms?game=LeagueOfLegends')}
+            style={styles.gameButton}
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="mr-2 text-[#00E676]"
-            >
-              <path
-                d="M12 2L2 7L12 12L22 7L12 2Z"
-                stroke="#00E676"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M2 17L12 22L22 17"
-                stroke="#00E676"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M2 12L12 17L22 12"
-                stroke="#00E676"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Jogo 1
-          </button>
-
-          {/* Botão Jogo 2 */}
-          <button
-            onClick={() => router.push('/rooms?game=Jogo2')}
-            className="w-full bg-[#111111] border border-[#333333] rounded-full py-3 px-8 text-white font-medium hover:bg-[#1A1A1A] transition-colors flex items-center justify-center"
+            <Text style={styles.gameText}>🎮 League of Legends</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/rooms?game=Valorant')}
+            style={styles.gameButton}
           >
-            <svg
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-              className="mr-2 text-[#00E676]"
-            >
-              <path
-                d="M12 2L2 7L12 12L22 7L12 2Z"
-                stroke="#00E676"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M2 17L12 22L22 17"
-                stroke="#00E676"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <path
-                d="M2 12L12 17L22 12"
-                stroke="#00E676"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            Jogo 2
-          </button>
-        </div>
+            <Text style={styles.gameText}>🎯 Valorant</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/rooms?game=PUBG')}
+            style={styles.gameButton}
+          >
+            <Text style={styles.gameText}>🔫 PUBG</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/rooms?game=MarvelRivals')}
+            style={styles.gameButton}
+          >
+            <Text style={styles.gameText}>🦸 Marvel Rivals</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push('/rooms?game=DBD')}
+            style={styles.gameButton}
+          >
+            <Text style={styles.gameText}>👻 Dead by Daylight</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Botão de Logout */}
-        <div className="flex justify-center mb-6">
-          <button
-            onClick={handleLogout}
-            className="w-full bg-[#FF3D00] text-white font-bold py-3 px-8 rounded-full hover:bg-[#D32F00] transition-colors"
-          >
-            Sair
-          </button>
-        </div>
-      </div>
-    </div>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>Sair</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#000000',
+    padding: 20,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#222222',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  logoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  logo: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+  },
+  content: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  subtitle: {
+    color: '#999999',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 32,
+  },
+  gameList: {
+    width: '100%',
+    gap: 16,
+    marginBottom: 24,
+  },
+  gameButton: {
+    backgroundColor: '#111111',
+    borderWidth: 1,
+    borderColor: '#333333',
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  gameText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  logoutButton: {
+    width: '100%',
+    backgroundColor: '#FF3D00',
+    borderRadius: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  logoutText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+});
